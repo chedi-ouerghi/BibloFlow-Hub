@@ -5,6 +5,7 @@ const { authJwt } = require('../middleware');
 // Routes des livres
 router.get('/livres', controller.getAllLivres);
 router.get('/livres/recommandes', controller.getLivresRecommandes);
+router.get('/livres/:id/similar', controller.getSimilarBooks);  // Placer avant la route générique
 router.get('/livres/:id', controller.getLivreDetails);
 
 // Routes des catégories et auteurs

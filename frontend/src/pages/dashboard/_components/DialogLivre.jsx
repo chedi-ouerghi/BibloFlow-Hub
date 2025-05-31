@@ -106,7 +106,7 @@ const DialogLivre = ({ isOpen, onClose, livre }) => {
     if (isOpen) {
       fetchData();
     }
-  }, [isOpen]); // Ne déclencher que lorsque le dialog s'ouvre
+  }, [isOpen]);
 
   const refreshLists = async () => {
     try {

@@ -209,3 +209,13 @@ export const emprunterLivre = async (livreId, data) => {
     throw error;
   }
 };
+
+// Récupérer des livres similaires
+export const getSimilarBooks = async (livreId) => {
+  try {
+    const response = await axios.get(`${API_URL}/livres/${livreId}/similar`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};

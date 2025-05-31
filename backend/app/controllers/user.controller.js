@@ -423,12 +423,20 @@ exports.marquerAvertissementLu = async (req, res) => {
 // Emprunter un livre
 exports.emprunterLivre = async (req, res) => {
   try {
+    const { dateRetourPrevue, etatLivreDepart } = req.body;
+    
+    if (!dateRetourPrevue || !etatLivreDepart) {
+      return res.status(400).json({ 
+        message: "La date de retour et l'état du livre sont requis" 
+      });
+    }
+
     const livre = await Livre.findById(req.params.livreId);
     if (!livre) {
       return res.status(404).json({ message: "Livre non trouvé" });
     }
 
-    // Vérifier si l'utilisateur a déjà un emprunt en cours pour ce livre
+    // Vérifier si l'utilisateur a déjà un emprunt en cours
     const empruntExistant = await Emprunt.findOne({
       livreId: livre._id,
       userId: req.userId,
@@ -441,45 +449,25 @@ exports.emprunterLivre = async (req, res) => {
       });
     }
 
-    // Vérifier si le livre est disponible
-    const empruntsEnCours = await Emprunt.countDocuments({
-      livreId: livre._id,
-      estRendu: false
-    });
-
-    if (empruntsEnCours >= livre.nombreExemplaires) {
-      return res.status(400).json({
-        message: "Désolé, ce livre n'est pas disponible pour le moment"
-      });
-    }
-
-    // Créer l'emprunt
-    const dateRetourPrevue = new Date();
-    dateRetourPrevue.setDate(dateRetourPrevue.getDate() + 14); // 14 jours d'emprunt
-
     const emprunt = new Emprunt({
       livreId: livre._id,
       userId: req.userId,
-      dateRetourPrevue,
+      dateRetourPrevue: new Date(dateRetourPrevue),
       commentaires: {
-        etatLivreDepart: req.body.etatLivreDepart
+        etatLivreDepart
       }
     });
 
     await emprunt.save();
 
-    // Retourner l'emprunt avec les détails du livre
-    const empruntPopulated = await emprunt.populate([
-      { path: 'livreId', select: 'titre isbn couvertureUrl' },
-      { path: 'userId', select: 'username' }
-    ]);
-
     res.status(201).json({
       message: "Livre emprunté avec succès",
-      emprunt: empruntPopulated
+      emprunt
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ 
+      message: err.message || "Une erreur est survenue lors de l'emprunt" 
+    });
   }
 };
 
@@ -591,4 +579,41 @@ exports.getRecommandations = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Erreur lors de la génération des recommandations", error });
     }
+};
+
+// Récupération des livres similaires
+exports.getSimilarBooks = async (req, res) => {
+  try {
+    const livre = await Livre.findById(req.params.id);
+    if (!livre) {
+      return res.status(404).json({ message: "Livre non trouvé" });
+    }
+
+    // Rechercher des livres de la même catégorie avec une note moyenne similaire
+    const similarBooks = await Livre.find({
+      _id: { $ne: livre._id }, // Exclure le livre actuel
+      categories: { $in: livre.categories },
+      noteMoyenne: { 
+        $gte: Math.max(0, livre.noteMoyenne - 0.5),
+        $lte: Math.min(5, livre.noteMoyenne + 0.5)
+      },
+      statut: 'published'
+    })
+    .limit(5)
+    .select('titre auteur couverture couvertureUrl categories noteMoyenne')
+    .populate('auteur', 'nom')
+    .populate('categories', 'nom')
+    .lean();
+
+    if (similarBooks.length === 0) {
+      return res.status(200).json({ 
+        message: "Aucun livre similaire trouvé",
+        similarBooks: []
+      });
+    }
+
+    res.status(200).json(similarBooks);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };

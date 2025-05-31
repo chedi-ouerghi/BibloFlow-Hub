@@ -10,6 +10,7 @@ import BookDetails from './_components/BookDetails';
 import CommentSection from './_components/CommentSection';
 import RatingSection from './_components/RatingSection';
 import EmpruntDialog from './_components/EmpruntDialog';
+import SimilarBooks from './_components/SimilarBooks';
 
 import {
   getLivreDetails,
@@ -20,7 +21,7 @@ import {
   addNote,
   updateNote,
   getUserNote,
-  emprunterLivre
+  getSimilarBooks
 } from '../api/publicapi';
 import { getCurrentUser, verifierLivreDejaEmprunte } from '../api/authapi';
 
@@ -42,16 +43,20 @@ const LivreDetails = () => {
   const [joursRestants, setJoursRestants] = useState(0);
   const [isBookHovered, setIsBookHovered] = useState(false);
   const [isEmpruntLoading, setIsEmpruntLoading] = useState(false);
+  const [similarBooks, setSimilarBooks] = useState([]);
   const currentUser = getCurrentUser();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [livreData, commentairesData, noteData, empruntVerif] = await Promise.all([
+        const [livreData, commentairesData, noteData, empruntVerif, similarBooksData] = await Promise.all([
           getLivreDetails(id),
           getLivreCommentaires(id),
           currentUser ? getUserNote(id) : Promise.resolve({ note: null }),
-          currentUser ? verifierLivreDejaEmprunte(id) : Promise.resolve({ empruntExistant: false })
+          currentUser ? verifierLivreDejaEmprunte(id) : Promise.resolve({ empruntExistant: false }),
+          getLivreDetails(id).then(livre => 
+            getSimilarBooks(id, livre.categorie, livre.noteMoyenne)
+          )
         ]);
 
         setLivre(livreData);
@@ -59,6 +64,7 @@ const LivreDetails = () => {
         setUserNote(noteData.note);
         setEmpruntExistant(empruntVerif.empruntExistant);
         setJoursRestants(empruntVerif.joursRestants || 0);
+        setSimilarBooks(similarBooksData || []);
         setLoading(false);
       } catch (err) {
         setError(err.message || 'Une erreur est survenue');
@@ -187,44 +193,48 @@ const LivreDetails = () => {
     }
   };
 
-  const handleEmprunt = async () => {
+  const handleEmprunt = async (data) => {
     try {
       setIsEmpruntLoading(true);
-      if (!currentUser || !currentUser.roles.includes('user')) {
+      if (!currentUser) {
         toast({
           title: "Erreur",
-          description: "Vous devez être connecté en tant qu'utilisateur pour emprunter",
+          description: "Vous devez être connecté pour emprunter",
           variant: "destructive"
         });
         return;
       }
 
-      if (empruntExistant) {
-        const verif = await verifierLivreDejaEmprunte(id);
-        toast({
-          title: "Impossible d'emprunter",
-          description: `Vous avez déjà emprunté ce livre et il vous reste ${verif.joursRestants} jours`,
-          variant: "destructive"
-        });
-        return;
+      const response = await fetch(`http://localhost:5000/api/emprunts/${livre._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          dateRetourPrevue: data.dateRetourPrevue,
+          etatLivreDepart: data.etatLivreDepart
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erreur lors de l\'emprunt');
       }
 
-      await emprunterLivre(id, { etatLivreDepart });
       setEmpruntSuccess(true);
-      
       setTimeout(() => {
         setShowEmpruntDialog(false);
         toast({
           title: "Succès !",
-          description: "Le livre a été emprunté avec succès",
-          variant: "default",
+          description: "Le livre a été emprunté avec succès"
         });
       }, 1500);
     } catch (err) {
       toast({
         title: "Erreur",
-        description: err.message || "Une erreur est survenue lors de l'emprunt",
-        variant: "destructive",
+        description: err.message,
+        variant: "destructive"
       });
     } finally {
       setIsEmpruntLoading(false);
@@ -255,6 +265,7 @@ const LivreDetails = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-indigo-100" />
       {/* Fond immersif avec cercle central */}
       <div className="fixed inset-0 z-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -352,6 +363,8 @@ const LivreDetails = () => {
                 )}
               </motion.div>
             )}
+
+          
           </div>
 
           {/* Colonne droite - Commentaires */}
@@ -388,7 +401,14 @@ const LivreDetails = () => {
         empruntSuccess={empruntSuccess}
         isLoading={isEmpruntLoading}
       />
-    </div>
+    
+
+            {similarBooks.length > 0 && (
+              <div className="w-full mt-8 justify-left ">
+                <SimilarBooks similarBooks={similarBooks} />
+              </div>
+            )}
+</div>
   );
 };
 

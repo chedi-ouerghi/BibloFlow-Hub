@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BookOpen, Plus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
@@ -135,8 +135,6 @@ const EmpruntsPage = () => {
         return emprunts.filter(emprunt => !emprunt.estRendu && emprunt.etat !== 'en_retard');
       case 'en_retard':
         return emprunts.filter(emprunt => emprunt.etat === 'en_retard');
-      case 'rendus':
-        return emprunts.filter(emprunt => emprunt.estRendu);
       default:
         return emprunts;
     }
@@ -188,7 +186,6 @@ const EmpruntsPage = () => {
                 <SelectItem value="all">Tous les emprunts</SelectItem>
                 <SelectItem value="en_cours">En cours</SelectItem>
                 <SelectItem value="en_retard">En retard</SelectItem>
-                <SelectItem value="rendus">Rendus</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -230,6 +227,15 @@ const EmpruntsPage = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {!emprunt.estRendu && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRendreEmprunt(emprunt._id)}
+                          >
+                            Rendre
+                          </Button>
+                        )}
                         <Select onValueChange={(value) => handleUpdateStatut(emprunt._id, value)}>
                           <SelectTrigger className="w-[130px]">
                             <SelectValue placeholder="Changer statut" />

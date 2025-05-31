@@ -1,12 +1,16 @@
-import React from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, BookOpen, Check } from 'lucide-react';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
+import { differenceInCalendarDays } from "date-fns";
 
 const SuccessAnimation = () => (
+  // Animation de succès avec Framer Motion
   <motion.div
     className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-10"
     initial={{ opacity: 0 }}
@@ -33,6 +37,24 @@ const EmpruntDialog = ({
   empruntSuccess,
   isLoading
 }) => {
+  const [dateRetourPrevue, setDateRetourPrevue] = useState(new Date());
+  const joursRestants = differenceInCalendarDays(dateRetourPrevue, new Date());
+
+  // Calculer les dates min et max
+  const dateMin = new Date();
+  dateMin.setDate(dateMin.getDate() + 1);
+  const dateMax = new Date();
+  dateMax.setDate(dateMax.getDate() + 30);
+
+  const handleConfirm = () => {
+    // Format the data according to the backend expectations
+    onConfirm({ 
+      dateRetourPrevue: dateRetourPrevue.toISOString(),
+      etatLivreDepart,
+      livreId: livre._id
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] overflow-hidden">
@@ -54,23 +76,33 @@ const EmpruntDialog = ({
           transition={{ duration: 0.3 }}
         >
           <div className="space-y-2">
-            <Label htmlFor="etatLivreDepart" className="text-sm font-medium text-gray-700">
-              État du livre
-            </Label>
-            <motion.div
-              whileFocus={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Textarea
-                id="etatLivreDepart"
-                value={etatLivreDepart}
-                onChange={(e) => setEtatLivreDepart(e.target.value)}
-                placeholder="Décrivez l'état actuel du livre (rayures, pages cornées, etc.)"
-                className="min-h-[100px] bg-gray-50 border-gray-200 focus:border-indigo-300 
-                  focus:ring-2 focus:ring-indigo-500/20 rounded-lg resize-none
-                  transition-all duration-200"
+            <Label>Date de retour prévue</Label>
+            <div className="calendar-container p-2 border rounded-lg">
+              <Calendar
+                onChange={setDateRetourPrevue}
+                value={dateRetourPrevue}
+                minDate={dateMin}
+                maxDate={dateMax}
+                locale="fr-FR"
+                className="w-full border-none"
+                tileClassName="rounded-lg hover:bg-indigo-50"
+                view="month"
               />
-            </motion.div>
+              <p className="text-sm text-gray-500 mt-2 text-center">
+                Date sélectionnée : {dateRetourPrevue.toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="etatLivreDepart">État du livre</Label>
+            <Textarea
+              id="etatLivreDepart"
+              value={etatLivreDepart}
+              onChange={(e) => setEtatLivreDepart(e.target.value)}
+              placeholder="Décrivez l'état actuel du livre"
+              className="min-h-[100px]"
+            />
           </div>
 
           <motion.div 
@@ -80,9 +112,13 @@ const EmpruntDialog = ({
             transition={{ delay: 0.2 }}
           >
             <AlertCircle className="w-4 h-4 text-amber-700 flex-shrink-0" />
-            <p className="text-sm text-amber-700">
-              La date de retour sera automatiquement fixée à 14 jours.
-            </p>
+           <p className="text-sm text-amber-700">
+  {joursRestants > 1
+    ? `Il reste ${joursRestants} jours avant la date de retour.`
+    : joursRestants === 1
+    ? `Il reste 1 jour avant la date de retour.`
+    : `La date de retour est aujourd'hui.`}
+</p>
           </motion.div>
         </motion.div>
 
@@ -95,7 +131,7 @@ const EmpruntDialog = ({
             Annuler
           </Button>
           <Button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={!etatLivreDepart.trim() || isLoading}
             className="bg-indigo-600 hover:bg-indigo-700 transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed"

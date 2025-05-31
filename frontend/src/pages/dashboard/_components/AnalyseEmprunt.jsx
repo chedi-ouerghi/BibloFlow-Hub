@@ -2,32 +2,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { motion } from 'framer-motion';
 
-const StatCard = ({ title, value, icon: Icon, color }) => (
-  <motion.div
-    whileHover={{ y: -2 }}
-    className={`bg-white p-6 rounded-xl border ${color} shadow-sm`}
-  >
-    <div className="flex items-center gap-4">
-      <div className={`p-2 rounded-lg ${color.replace('border-', 'bg-').replace('100', '50')}`}>
-        <Icon className={`w-8 h-8 ${color.replace('border-', 'text-').replace('100', '600')}`} />
-      </div>
-      <div>
-        <p className="text-sm text-gray-600">{title}</p>
-        <p className="text-2xl font-bold">{value}</p>
-      </div>
-    </div>
-  </motion.div>
-);
 
 const AnalyseEmprunt = ({ emprunts = [], statistiques = {} }) => {
-  // Calcul des statistiques si elles ne sont pas fournies
-  const stats = {
-    total: statistiques.total || emprunts.length || 0,
-    enCours: statistiques.enCours || emprunts.filter(e => !e.estRendu).length || 0,
-    rendus: statistiques.rendus || emprunts.filter(e => e.estRendu).length || 0,
-    enRetard: statistiques.enRetard || emprunts.filter(e => !e.estRendu && e.estEnRetard).length || 0
-  };
-
+  
   // Calcul des statistiques supplémentaires
   const moyenneJoursEmprunt = emprunts.reduce((acc, emprunt) => {
     const dateEmprunt = new Date(emprunt.dateEmprunt);
