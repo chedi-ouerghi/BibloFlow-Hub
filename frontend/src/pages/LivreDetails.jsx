@@ -13,15 +13,15 @@ import EmpruntDialog from './_components/EmpruntDialog';
 import SimilarBooks from './_components/SimilarBooks';
 
 import {
-  getLivreDetails,
-  getLivreCommentaires,
-  addCommentaire,
-  updateCommentaire,
-  deleteCommentaire,
-  addNote,
-  updateNote,
-  getUserNote,
-  getSimilarBooks
+    getLivreDetails,
+    getLivreCommentaires,
+    addCommentaire,
+    updateCommentaire,
+    deleteCommentaire,
+    addNote,
+    updateNote,
+    getUserNote,
+    getSimilarBooks
 } from '../api/publicapi';
 import { getCurrentUser, verifierLivreDejaEmprunte } from '../api/authapi';
 

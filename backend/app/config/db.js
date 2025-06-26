@@ -1,19 +1,15 @@
 const mongoose = require("mongoose");
-require('dotenv').config();
-
-
+require("dotenv").config();
 
 if (!process.env.MONGODB_URI) {
   console.error("❌ MONGODB_URI is not defined in environment variables");
   process.exit(1);
 }
 
-const uri = process.env.MONGODB_URI ;
+const uri = process.env.MONGODB_URI;
 
-
+// 🔧 Plus besoin de useNewUrlParser ou useUnifiedTopology
 const options = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   retryWrites: true,
   w: "majority"
 };

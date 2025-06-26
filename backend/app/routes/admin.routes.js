@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const controller = require('../controllers/admin.controller');
 const { authJwt } = require('../middleware');
+const { CategorieLivre } = require('../models');
 
 // Middleware pour vérifier que l'utilisateur est un admin
 const adminMiddleware = [authJwt.verifyToken, authJwt.isAdmin];
@@ -43,5 +44,34 @@ router.post('/admin/users/:userId/avertissements', adminMiddleware, controller.a
 // Routes commentaires
 router.get('/admin/commentaires', adminMiddleware, controller.getAllCommentaires);
 router.put('/admin/commentaires/:id/moderation', adminMiddleware, controller.moderateCommentaire);
+
+
+// Route POST pour créer plusieurs catégories à la fois
+router.post('/admin/categories/multiple',  async (req, res) => {
+  try {
+    const categoriesData = req.body; // on récupère directement le tableau
+
+    if (!Array.isArray(categoriesData) || categoriesData.length === 0) {
+      return res.status(400).json({ message: 'Veuillez fournir un tableau non vide de catégories.' });
+    }
+
+    const categoriesCreees = await CategorieLivre.insertMany(categoriesData, { ordered: true });
+
+    res.status(201).json({
+      message: `${categoriesCreees.length} catégories créées avec succès.`,
+      categories: categoriesCreees
+    });
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: 'Erreur de validation', details: error.errors });
+    }
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'Doublon détecté dans les catégories.', details: error.keyValue });
+    }
+    res.status(500).json({ message: 'Erreur serveur', error: error.message });
+  }
+});
+
+
 
 module.exports = router;

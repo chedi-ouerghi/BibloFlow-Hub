@@ -92,7 +92,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header Amélioré */}
-      <header className="relative h-48 bg-gradient-to-r from-indigo-600 to-blue-500 overflow-hidden">
+      <header className="relative h-48 bg-gradient-to-br from-gray-900/90 via-blue-900/80 to-blue-800/70 overflow-hidden">
         <div className="absolute inset-0 bg-pattern opacity-10"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/10"></div>
         <div className="relative max-w-7xl mx-auto px-4 h-full flex items-center">
